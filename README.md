@@ -22,7 +22,8 @@ I built this to get hands-on experience with the systems a help desk and junior 
 
 - **Virtualization:** Hyper-V role, Generation 2 VMs, virtual TPM, internal virtual switches, checkpoints
 - **Networking:** subnetting, static vs. DHCP addressing, default gateways, Windows NAT, DNS forwarding
-- **Active Directory:** new forest and domain, domain join, domain authentication
+- **Active Directory:** new forest and domain, domain join, OUs, users and groups, password resets, account unlocks, offboarding
+- **Permissions:** group-based NTFS and SMB share permissions, mapped drives
 - **DHCP:** server authorization in AD, scopes, scope options (router, DNS server, DNS domain)
 - **Security:** Microsoft Windows Server 2025 security baseline via OSConfig, Secure Boot, memory integrity (HVCI), UAC and least privilege, firewall and Defender checks, password and lockout policy
 - **PowerShell:** most of the build was done from the command line
@@ -70,6 +71,26 @@ A Windows 11 Enterprise VM with a virtual TPM. It received its address and DNS s
 Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential LAB\Administrator -Restart
 ```
 
+## Help desk practice
+
+I turned the domain into a small company and worked through common help desk tickets, using both **Active Directory Users and Computers** and PowerShell.
+
+| Ticket | What I did |
+|---|---|
+| Company setup | Created a `LabCorp` OU structure (Users, Computers, Groups, Disabled Users) and Sales and HR security groups |
+| New hire | Created user accounts with temporary passwords and "must change at next logon," and added them to department groups |
+| Forgotten password | Verified identity first, then reset the password in ADUC with a forced change at next sign-in |
+| Account locked out | Confirmed the domain lockout policy (5 attempts), reproduced a lockout, found it with `Search-ADAccount -LockedOut`, and unlocked it |
+| Account lookup | Checked status, last sign-in, password age and group membership with `Get-ADUser` |
+| Shared folder access | Created a Sales share with group-based NTFS (`icacls`) and share permissions, confirmed access was denied for a non-member, and granted it through group membership |
+| Mapped drive | Mapped `S:` to the share with `net use` |
+| Offboarding | Disabled the account, removed group memberships, and moved it to Disabled Users |
+
+**Lessons that came up:**
+- New group membership only applies after the user signs out and back in.
+- Disabling an account doesn't end a session that's already open.
+- `New-ADUser` creates the account before setting the password, so a rejected password leaves a disabled account behind. Fix it in place instead of recreating it.
+
 ## Security hardening
 
 - Checked the baseline state: firewall profiles, Microsoft Defender, Secure Boot, Remote Desktop, installed features.
@@ -94,6 +115,8 @@ Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential
 | `Get-Service NTDS` "cannot find any service" after baseline | Non-elevated session | Re-ran elevated: all services running |
 | BIOS rejected its own admin password, locking all settings | Password mistyped when it was set | Cleared it with the PSWD jumper on the motherboard, then enabled Secure Boot |
 | Server Manager role tiles red: "Online – Restart pending" | Updates waiting for a restart | Restarted DC01; tiles turned green |
+| `New-ADUser` failed on password complexity, then "account already exists" | The account is created before the password is set | Set the password, required a change at next logon, and enabled the existing account |
+| `Move-ADObject`: "object's parent is either uninstantiated or deleted" | OU path variable not set in a new PowerShell session | Re-set `$base` and confirmed the OU with `Get-ADOrganizationalUnit` |
 | Local Server tile red under Services | On-demand services (edgeupdate, sppsvc, RemoteRegistry and others) stopped by design | Listed them with `Get-CimInstance Win32_Service` and left them alone |
 
 ## Screenshots
@@ -116,7 +139,7 @@ Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential
 
 ## Next steps
 
-- [ ] Help desk practice: OUs, users, groups, password resets, account unlocks, share permissions, offboarding
+- [x] Help desk practice: OUs, users, groups, password resets, account unlocks, share permissions, offboarding
 - [ ] Remote Desktop access to CLIENT01 for a standard domain user
 - [x] Enable Secure Boot on the host
 - [ ] Add a firewall VM between lab subnets
