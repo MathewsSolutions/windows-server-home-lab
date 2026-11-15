@@ -24,7 +24,7 @@ I built this to get hands-on experience with the systems a help desk and junior 
 - **Networking:** subnetting, static vs. DHCP addressing, default gateways, Windows NAT, DNS forwarding
 - **Active Directory:** new forest and domain, domain join, domain authentication
 - **DHCP:** server authorization in AD, scopes, scope options (router, DNS server, DNS domain)
-- **Security:** Microsoft Windows Server 2025 security baseline via OSConfig, UAC and least privilege, firewall and Defender checks, password and lockout policy
+- **Security:** Microsoft Windows Server 2025 security baseline via OSConfig, Secure Boot, memory integrity (HVCI), UAC and least privilege, firewall and Defender checks, password and lockout policy
 - **PowerShell:** most of the build was done from the command line
 - **Troubleshooting:** driver installation on unsupported hardware, VM boot problems, permission errors after hardening
 
@@ -76,6 +76,8 @@ Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential
 - Raised the local Administrator password to 14+ characters.
 - Applied Microsoft's Windows Server 2025 security baseline with OSConfig: the `WorkgroupMember` baseline on HV01, and the `DomainController` baseline on DC01 after taking a checkpoint.
 - Verified afterward that AD DS, DNS, DHCP, NAT and domain sign-in all still worked.
+- Cleared a locked BIOS admin password with the motherboard PSWD jumper, then enabled **Secure Boot** on the host (`Confirm-SecureBootUEFI` returns `True`).
+- Confirmed **memory integrity (HVCI)** is configured and running on HV01 via `Win32_DeviceGuard`. Credential Guard isn't configured there, which has little effect since the host isn't domain-joined.
 
 **Effects I observed after hardening:** the sign-in screen no longer shows the last user, the built-in Administrator now gets UAC prompts, and Hyper-V and service commands fail with permission or "not found" errors unless PowerShell runs elevated.
 
@@ -90,6 +92,9 @@ Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential
 | `Checkpoint-VM` not recognized | Run inside a VM instead of on the host | Ran Hyper-V commands on HV01 |
 | `Start-VM`: "You do not have the required permission" after baseline | Baseline enabled UAC for the built-in Administrator | Ran PowerShell as administrator |
 | `Get-Service NTDS` "cannot find any service" after baseline | Non-elevated session | Re-ran elevated: all services running |
+| BIOS rejected its own admin password, locking all settings | Password mistyped when it was set | Cleared it with the PSWD jumper on the motherboard, then enabled Secure Boot |
+| Server Manager role tiles red: "Online – Restart pending" | Updates waiting for a restart | Restarted DC01; tiles turned green |
+| Local Server tile red under Services | On-demand services (edgeupdate, sppsvc, RemoteRegistry and others) stopped by design | Listed them with `Get-CimInstance Win32_Service` and left them alone |
 
 ## Screenshots
 
@@ -113,7 +118,7 @@ Add-Computer -DomainName lab.mathews-solutions.com -NewName CLIENT01 -Credential
 
 - [ ] Help desk practice: OUs, users, groups, password resets, account unlocks, share permissions, offboarding
 - [ ] Remote Desktop access to CLIENT01 for a standard domain user
-- [ ] Enable Secure Boot on the host
+- [x] Enable Secure Boot on the host
 - [ ] Add a firewall VM between lab subnets
 
 ## References
