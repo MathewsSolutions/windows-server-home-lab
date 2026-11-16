@@ -2,7 +2,9 @@
 
 A self-built Windows domain running on a repurposed Dell OptiPlex: a Hyper-V host, a domain controller providing Active Directory, DNS and DHCP, and a domain-joined Windows 11 workstation, all on an isolated lab network and hardened with Microsoft's security baseline.
 
-I built this to get hands-on experience with the systems a help desk and junior systems administrator support every day.
+I built this to get hands-on experience with the systems a help desk and junior systems administrator support every day, then used it to work through real help desk tickets: new hires, password resets, account lockouts, folder access and offboarding.
+
+**Jump to:** [Architecture](#at-a-glance) · [How it was built](#how-it-was-built) · [Help desk practice](#help-desk-practice) · [Security hardening](#security-hardening) · [Troubleshooting](#troubleshooting-log)
 
 ![Lab architecture](images/architecture.png)
 
@@ -139,10 +141,8 @@ I turned the domain into a small company and worked through common help desk tic
 
 ## Next steps
 
-- [x] Help desk practice: OUs, users, groups, password resets, account unlocks, share permissions, offboarding
-- [ ] Remote Desktop access to CLIENT01 for a standard domain user
-- [x] Enable Secure Boot on the host
-- [ ] Add a firewall VM between lab subnets
+- Remote Desktop access to CLIENT01 for a standard domain user
+- A firewall VM between lab subnets
 
 ## References
 
